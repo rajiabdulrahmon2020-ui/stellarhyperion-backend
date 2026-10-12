@@ -97,6 +97,7 @@ export interface PendingTransfer {
   readonly checkFailures: number;
   /** True when an inbound delivery already exists, which settles it without asking the rail. */
   readonly delivered: boolean;
+  readonly observedAt?: Date | null;
 }
 
 /** What a rail client has to offer the pass that polls it. */

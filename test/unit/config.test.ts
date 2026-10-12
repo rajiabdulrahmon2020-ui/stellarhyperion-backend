@@ -242,4 +242,45 @@ describe("watch plan", () => {
     }
     throw new Error("expected a ConfigError");
   });
+
+  it("accepts sslMode options via environment variable or connection URL query parameter", () => {
+    // 1. Default when not specified is disable
+    const defaultConfig = loadConfig({ env: completeEnv() });
+    expect(defaultConfig.sslMode).toBe("disable");
+    expect(defaultConfig.databaseSslMode).toBe("disable");
+
+    // 2. Explicit DATABASE_SSL_MODE
+    const requireConfig = loadConfig({
+      env: completeEnv({ DATABASE_SSL_MODE: "require" }),
+    });
+    expect(requireConfig.sslMode).toBe("require");
+
+    const noVerifyConfig = loadConfig({
+      env: completeEnv({ DATABASE_SSL_MODE: "no-verify" }),
+    });
+    expect(noVerifyConfig.sslMode).toBe("no-verify");
+
+    // 3. Fallback from POSTGRES_SSL_MODE
+    const postgresSslConfig = loadConfig({
+      env: completeEnv({ POSTGRES_SSL_MODE: "prefer" }),
+    });
+    expect(postgresSslConfig.sslMode).toBe("prefer");
+
+    // 4. Inferred from DATABASE_URL sslmode query param
+    const urlSslConfig = loadConfig({
+      env: completeEnv({
+        DATABASE_URL: "postgresql://hyperion:x@127.0.0.1:5433/hyperion?sslmode=require",
+      }),
+    });
+    expect(urlSslConfig.sslMode).toBe("require");
+  });
+
+  it("accepts POSTGRES_URL when DATABASE_URL is not set", () => {
+    const env = completeEnv();
+    delete env.DATABASE_URL;
+    env.POSTGRES_URL = "postgresql://hyperion:x@127.0.0.1:5433/hyperion";
+
+    const config = loadConfig({ env });
+    expect(config.databaseUrl).toBe("postgresql://hyperion:x@127.0.0.1:5433/hyperion");
+  });
 });
